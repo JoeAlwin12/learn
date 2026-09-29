@@ -4,24 +4,31 @@ const pool = require('../config/database');
 
 async function runMigrations() {
   const client = await pool.connect();
-  
+
   try {
     console.log('Running migrations...');
-    
-    // Read migration file
-    const migrationPath = path.join(__dirname, 'migrations', '001_create_tables.sql');
-    const sql = fs.readFileSync(migrationPath, 'utf-8');
-    
-    // Execute migration
-    await client.query(sql);
-    
+    const migrationsDir = path.join(__dirname, 'migrations');
+    const files = fs.readdirSync(migrationsDir)
+      .filter(file => file.endsWith('.sql'))
+      .sort();
+
+    await client.query('BEGIN');
+
+    for (const file of files) {
+      console.log(`→ Running ${file}`);
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+      await client.query(sql);
+    }
+
+    await client.query('COMMIT');
     console.log('✓ Migrations completed successfully');
-    process.exit(0);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Migration error:', error);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     client.release();
+    await pool.end();
   }
 }
 
