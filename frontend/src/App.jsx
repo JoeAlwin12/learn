@@ -5,8 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminPanel from './pages/AdminPanel';
 
-function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+function PrivateRoute({ children, roles }) {
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -16,7 +16,9 @@ function PrivateRoute({ children }) {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (roles && !roles.includes(user?.role)) return <Navigate to="/" />;
+  return children;
 }
 
 function AppRoutes() {
@@ -39,7 +41,7 @@ function AppRoutes() {
       <Route
         path="/admin"
         element={
-          <PrivateRoute>
+          <PrivateRoute roles={['admin']}>
             <AdminPanel />
           </PrivateRoute>
         }
