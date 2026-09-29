@@ -22,28 +22,31 @@ async function seedDatabase() {
         username: 'joe',
         email: 'joe@quantic.com',
         password_hash: hashedPassword,
-        full_name: 'Joe'
+        full_name: 'Joe',
+        role: 'admin'
       },
       {
         id: uuidv4(),
         username: 'senthil',
         email: 'senthil@quantic.com',
         password_hash: hashedPassword,
-        full_name: 'Senthil'
+        full_name: 'Senthil',
+        role: 'manager'
       },
       {
         id: uuidv4(),
         username: 'cto_viewer',
         email: 'cto@quantic.com',
         password_hash: hashedPassword,
-        full_name: 'CTO Viewer'
+        full_name: 'CTO Viewer',
+        role: 'sales'
       }
     ];
     
     for (const user of users) {
       await client.query(
-        'INSERT INTO users (id, username, email, password_hash, full_name) VALUES ($1, $2, $3, $4, $5)',
-        [user.id, user.username, user.email, user.password_hash, user.full_name]
+        'INSERT INTO users (id, username, email, password_hash, full_name, role) VALUES ($1, $2, $3, $4, $5, $6)',
+        [user.id, user.username, user.email, user.password_hash, user.full_name, user.role]
       );
     }
     
