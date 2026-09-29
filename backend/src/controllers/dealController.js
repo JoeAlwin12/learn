@@ -76,7 +76,7 @@ async function getDealById(req, res) {
     
     const result = await pool.query(`
       SELECT 
-        d.id, d.company_name, d.location, d.deal_value, d.stage, 
+        d.id, d.company_name, d.product, d.location, d.deal_value, d.stage, 
         d.process_type_id, d.primary_owner_id, d.created_at, d.updated_at,
         u.username as owner_name, u.full_name as owner_full_name,
         pt.name as process_type_name,
