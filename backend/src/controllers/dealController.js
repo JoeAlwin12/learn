@@ -107,7 +107,6 @@ async function getDealById(req, res) {
 async function createDeal(req, res) {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
     const { company_name, product, location, deal_value, process_type_id, team_member_ids } = req.body;
     const primary_owner_id = req.user.id;
 
@@ -116,8 +115,10 @@ async function createDeal(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    await client.query('BEGIN');
+
     // Check if process type exists
-    const ptResult = await pool.query('SELECT id FROM process_types WHERE id = $1', [process_type_id]);
+    const ptResult = await client.query('SELECT id FROM process_types WHERE id = $1 AND is_active = TRUE', [process_type_id]);
     if (ptResult.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid process type' });
     }
@@ -146,7 +147,8 @@ async function createDeal(req, res) {
               [dealId, userId]
             );
           } catch (err) {
-            // Silently skip if user not found or already added
+            await client.query('ROLLBACK');
+            throw err;
           }
         }
       }
