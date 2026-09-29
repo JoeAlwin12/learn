@@ -9,7 +9,7 @@ async function getAllDeals(req, res) {
     
     let query = `
       SELECT 
-        d.id, d.company_name, d.location, d.deal_value, d.stage, 
+        d.id, d.company_name, d.product, d.location, d.deal_value, d.stage, 
         d.process_type_id, d.primary_owner_id, d.created_at, d.updated_at,
         u.username as owner_name,
         pt.name as process_type_name,
@@ -44,7 +44,7 @@ async function getAllDeals(req, res) {
     }
 
     if (product) {
-      conditions.push(`d.company_name ILIKE $${paramCount}`);
+      conditions.push(`d.product ILIKE ${paramCount}`);
       params.push(`%${product}%`);
       paramCount++;
     }
@@ -105,8 +105,10 @@ async function getDealById(req, res) {
 }
 
 async function createDeal(req, res) {
+  const client = await pool.connect();
   try {
-    const { company_name, location, deal_value, process_type_id, team_member_ids } = req.body;
+    await client.query('BEGIN');
+    const { company_name, product, location, deal_value, process_type_id, team_member_ids } = req.body;
     const primary_owner_id = req.user.id;
 
     // Validation
@@ -123,13 +125,13 @@ async function createDeal(req, res) {
     const dealId = uuidv4();
 
     // Insert deal
-    await pool.query(
-      'INSERT INTO deals (id, company_name, location, deal_value, process_type_id, primary_owner_id) VALUES ($1, $2, $3, $4, $5, $6)',
-      [dealId, company_name, location, deal_value, process_type_id, primary_owner_id]
+    await client.query(
+      'INSERT INTO deals (id, company_name, product, location, deal_value, process_type_id, primary_owner_id) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [dealId, company_name, product || null, location, deal_value, process_type_id, primary_owner_id]
     );
 
     // Add primary owner to team
-    await pool.query(
+    await client.query(
       'INSERT INTO deal_team_members (deal_id, user_id) VALUES ($1, $2)',
       [dealId, primary_owner_id]
     );
@@ -139,7 +141,7 @@ async function createDeal(req, res) {
       for (const userId of team_member_ids) {
         if (userId !== primary_owner_id) {
           try {
-            await pool.query(
+            await client.query(
               'INSERT INTO deal_team_members (deal_id, user_id) VALUES ($1, $2)',
               [dealId, userId]
             );
@@ -150,9 +152,12 @@ async function createDeal(req, res) {
       }
     }
 
+    await client.query('COMMIT');
+
     res.status(201).json({
       id: dealId,
       company_name,
+      product: product || null,
       location,
       deal_value,
       stage: 'interested',
@@ -160,15 +165,18 @@ async function createDeal(req, res) {
       primary_owner_id
     });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Create deal error:', error);
     res.status(500).json({ error: 'Failed to create deal' });
+  } finally {
+    client.release();
   }
 }
 
 async function updateDeal(req, res) {
   try {
     const { id } = req.params;
-    const { company_name, location, deal_value, team_member_ids } = req.body;
+    const { company_name, product, location, deal_value, team_member_ids } = req.body;
     const userId = req.user.id;
 
     // Get deal
@@ -197,6 +205,12 @@ async function updateDeal(req, res) {
     if (company_name !== undefined) {
       updates.push(`company_name = $${paramCount}`);
       values.push(company_name);
+      paramCount++;
+    }
+
+    if (product !== undefined) {
+      updates.push(`product = ${paramCount}`);
+      values.push(product || null);
       paramCount++;
     }
 
