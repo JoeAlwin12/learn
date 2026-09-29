@@ -14,11 +14,19 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
+    if (storedToken) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        const response = await authAPI.me();
+        setUser(response.data);
+        localStorage.setItem('user', JSON.stringify(response.data));
+      } catch (err) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
+      }
     }
-
     setLoading(false);
   }, []);
 
