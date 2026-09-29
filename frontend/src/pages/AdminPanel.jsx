@@ -11,7 +11,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [processTypes, setProcessTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newUser, setNewUser] = useState({ username: '', email: '', password: '', full_name: '' });
+  const [newUser, setNewUser] = useState({ username: '', email: '', password: '', full_name: '', role: 'sales' });
   const [newProcessType, setNewProcessType] = useState({ name: '', description: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -45,7 +45,7 @@ export default function AdminPanel() {
     try {
       await userAPI.create(newUser);
       setSuccess('User created successfully');
-      setNewUser({ username: '', email: '', password: '', full_name: '' });
+      setNewUser({ username: '', email: '', password: '', full_name: '', role: 'sales' });
       fetchData();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -167,6 +167,11 @@ export default function AdminPanel() {
                       value={newUser.full_name}
                       onChange={(e) => setNewUser({...newUser, full_name: e.target.value})}
                     />
+                    <select value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})}>
+                      <option value="sales">Sales</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                    </select>
                     <button type="submit">Create User</button>
                   </form>
                 </div>
@@ -179,6 +184,8 @@ export default function AdminPanel() {
                         <th>Username</th>
                         <th>Email</th>
                         <th>Name</th>
+                        <th>Role</th>
+                        <th>Status</th>
                         <th>Action</th>
                       </tr>
                     </thead>
@@ -188,6 +195,8 @@ export default function AdminPanel() {
                           <td>{u.username}</td>
                           <td>{u.email}</td>
                           <td>{u.full_name}</td>
+                          <td>{u.role}</td>
+                          <td>{u.is_active ? 'Active' : 'Inactive'}</td>
                           <td>
                             <button
                               className={styles.deleteBtn}
