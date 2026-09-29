@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 async function getAllProcessTypes(req, res) {
   try {
     const result = await pool.query(
-      'SELECT id, name, description, created_at FROM process_types ORDER BY created_at DESC'
+      'SELECT id, name, description, is_active, created_at FROM process_types ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {
@@ -17,7 +17,7 @@ async function getProcessTypeById(req, res) {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, name, description, created_at FROM process_types WHERE id = $1',
+      'SELECT id, name, description, is_active, created_at FROM process_types WHERE id = $1',
       [id]
     );
 
@@ -122,9 +122,9 @@ async function deleteProcessType(req, res) {
       return res.status(404).json({ error: 'Process type not found' });
     }
 
-    await pool.query('DELETE FROM process_types WHERE id = $1', [id]);
+    await pool.query('UPDATE process_types SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
 
-    res.json({ message: 'Process type deleted successfully' });
+    res.json({ message: 'Process type archived successfully' });
   } catch (error) {
     console.error('Delete process type error:', error);
     res.status(500).json({ error: 'Failed to delete process type' });
