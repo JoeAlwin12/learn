@@ -5,6 +5,7 @@ import styles from '../styles/DealModal.module.css';
 export default function DealModal({ dealId, onClose, onSave }) {
   const [formData, setFormData] = useState({
     company_name: '',
+    product: '',
     location: '',
     deal_value: '',
     process_type_id: '',
@@ -52,6 +53,7 @@ export default function DealModal({ dealId, onClose, onSave }) {
       const deal = response.data;
       setFormData({
         company_name: deal.company_name,
+        product: deal.product || '',
         location: deal.location,
         deal_value: deal.deal_value,
         process_type_id: deal.process_type_id,
@@ -101,6 +103,7 @@ export default function DealModal({ dealId, onClose, onSave }) {
 
       const payload = {
         company_name: formData.company_name,
+        product: formData.product,
         location: formData.location,
         deal_value: parseFloat(formData.deal_value),
         process_type_id: formData.process_type_id,
@@ -205,6 +208,18 @@ export default function DealModal({ dealId, onClose, onSave }) {
             {errors.company_name && (
               <span className={styles.fieldError}>{errors.company_name}</span>
             )}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Product</label>
+            <input
+              type="text"
+              name="product"
+              value={formData.product}
+              onChange={handleChange}
+              placeholder="Enter product / solution"
+              disabled={saving}
+            />
           </div>
 
           <div className={styles.formGroup}>
