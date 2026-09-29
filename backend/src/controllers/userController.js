@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 async function getAllUsers(req, res) {
   try {
     const result = await pool.query(
-      'SELECT id, username, email, full_name, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, username, email, full_name, role, is_active, created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {
@@ -18,7 +18,7 @@ async function getUserById(req, res) {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, username, email, full_name, created_at FROM users WHERE id = $1',
+      'SELECT id, username, email, full_name, role, is_active, created_at FROM users WHERE id = $1',
       [id]
     );
 
@@ -35,7 +35,7 @@ async function getUserById(req, res) {
 
 async function createUser(req, res) {
   try {
-    const { username, email, password, full_name } = req.body;
+    const { username, email, password, full_name, role = 'sales' } = req.body;
 
     // Validation
     if (!username || !email || !password || !full_name) {
@@ -56,16 +56,22 @@ async function createUser(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const id = uuidv4();
 
+    if (!['admin', 'manager', 'sales'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
     await pool.query(
-      'INSERT INTO users (id, username, email, password_hash, full_name) VALUES ($1, $2, $3, $4, $5)',
-      [id, username, email, hashedPassword, full_name]
+      'INSERT INTO users (id, username, email, password_hash, full_name, role) VALUES ($1, $2, $3, $4, $5, $6)',
+      [id, username, email, hashedPassword, full_name, role]
     );
 
     res.status(201).json({
       id,
       username,
       email,
-      full_name
+      full_name,
+      role,
+      is_active: true
     });
   } catch (error) {
     console.error('Create user error:', error);
@@ -128,9 +134,13 @@ async function deleteUser(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' });
+    }
 
-    res.json({ message: 'User deleted successfully' });
+    await pool.query('UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+
+    res.json({ message: 'User deactivated successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Failed to delete user' });
