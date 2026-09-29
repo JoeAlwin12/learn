@@ -28,12 +28,14 @@ export default function Dashboard() {
               ACTING AS{' '}
               <span className={styles.userName}>{user?.full_name}</span>
             </span>
-            <button
-              className={styles.adminBtn}
-              onClick={() => navigate('/admin')}
-            >
-              Admin
-            </button>
+            {user?.role === 'admin' && (
+              <button
+                className={styles.adminBtn}
+                onClick={() => navigate('/admin')}
+              >
+                Admin
+              </button>
+            )}
             <button className={styles.logoutBtn} onClick={logout}>
               Logout
             </button>
